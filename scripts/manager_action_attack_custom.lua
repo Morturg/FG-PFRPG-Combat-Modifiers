@@ -3,13 +3,8 @@
 -- attribution and copyright information.
 --
 
-function onInit()
-	ActionsManager.registerModHandler("attack", modAttackCustom);
-	ActionsManager.registerModHandler("grapple", modAttackCustom);
-end
-
-function modAttackCustom(rSource, rTarget, rRoll, ...)
-	
+local modAttack_old
+local function modAttack_new(rSource, rTarget, rRoll, ...)
 	-- Debug.chat("rSource:  ", rSource);
 	-- Debug.chat("rTarget:  ", rTarget);
 	-- Debug.chat("rRoll:  ", rRoll);
@@ -39,8 +34,8 @@ function modAttackCustom(rSource, rTarget, rRoll, ...)
 	end
 	
 	-- Call original modAttack
-	ActionAttack.modAttack(rSource, rTarget, rRoll, ...);
-	
+	modAttack_old(rSource, rTarget, rRoll, ...);
+
 	if sAttackType == "R" then
 		removeEffect(srcCTnode, "Flanking");
 		if rTarget ~= nil then
@@ -725,3 +720,10 @@ function hasSpell(actorNode, sSpell)
 	
 end
 
+function onInit()
+	modAttack_old = ActionAttack.modAttack
+	ActionAttack.modAttack = modAttack_new
+
+	ActionsManager.registerModHandler("attack", modAttack_new);
+	ActionsManager.registerModHandler("grapple", modAttack_new);
+end
