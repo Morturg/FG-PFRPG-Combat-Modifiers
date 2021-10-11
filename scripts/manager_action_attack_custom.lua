@@ -8,7 +8,7 @@ function onInit()
 	ActionsManager.registerModHandler("grapple", modAttackCustom);
 end
 
-function modAttackCustom(rSource, rTarget, rRoll)
+function modAttackCustom(rSource, rTarget, rRoll, ...)
 	
 	-- Debug.chat("rSource:  ", rSource);
 	-- Debug.chat("rTarget:  ", rTarget);
@@ -39,7 +39,7 @@ function modAttackCustom(rSource, rTarget, rRoll)
 	end
 	
 	-- Call original modAttack
-	ActionAttack.modAttack(rSource, rTarget, rRoll);
+	ActionAttack.modAttack(rSource, rTarget, rRoll, ...);
 	
 	if sAttackType == "R" then
 		removeEffect(srcCTnode, "Flanking");
