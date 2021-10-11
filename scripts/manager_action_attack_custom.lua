@@ -11,10 +11,10 @@ local function modAttack_new(rSource, rTarget, rRoll, ...)
 	-- for an NPC, this is the CT node; for PC, it is the charsheet
 	local srcNode = ActorManager.getCreatureNode(rSource);
 	local srcCTnode = ActorManager.getCTNode(rSource);
-	
+
 	local sAttackType = attackType(rRoll);
 	local nRange = getRangeToTarget(rSource, rTarget);
-	
+
 	-- Check range and add/remove "rng30" effect as appropriate
 	-- This needs to be done before modAttack so that the effect
 	-- is correctly applied to the current roll
@@ -32,7 +32,7 @@ local function modAttack_new(rSource, rTarget, rRoll, ...)
 		removeEffect(srcCTnode, "rng30");
 		removeEffect(srcCTnode, "PBS; rng30; ATK: 1 ranged; DMG: 1 ranged; DMGS: 1");
 	end
-	
+
 	-- Call original modAttack
 	modAttack_old(rSource, rTarget, rRoll, ...);
 
@@ -45,7 +45,7 @@ local function modAttack_new(rSource, rTarget, rRoll, ...)
 				rRoll.sDesc = rRoll.sDesc .. " " .. "[RANGE " .. nRangeMod .."]";
 				rRoll.nMod = rRoll.nMod + nRangeMod;
 			end
-			
+
 			-- Check and add shooting into melee modifier
 			local nShootMeleeMod = checkShootMelee(rSource, srcNode, rTarget);
 			if nShootMeleeMod < 0 then
@@ -60,7 +60,7 @@ local function modAttack_new(rSource, rTarget, rRoll, ...)
 		if bFlank then
 			rRoll.sDesc = rRoll.sDesc .. " " .. "[FLANK +2]";
 			rRoll.nMod = rRoll.nMod + 2;
-			
+
 			-- Add "Flanking" effect to the acting character (e.g. for Sneak Attack)
 			-- addEffect("", "", srcCTnode, {sName = "Flanking", nDuration = 1, nGMOnly = 0}, false);
 			addEffect(rSource, {sName = "Flanking", nDuration = 1, nGMOnly = 0});
@@ -68,25 +68,21 @@ local function modAttack_new(rSource, rTarget, rRoll, ...)
 			removeEffect(srcCTnode, "Flanking");
 		end
 	end
-	
 end
 
+-- Returns the range from source to target
 function getRangeToTarget(rSource, rTarget)
-	-- Returns the range from source to target
-	
 	-- are we on a gridded map?
 	local srcToken, tgtToken, srcImage, tgtImage = getTokensMaps(rSource, rTarget);
 	if srcToken == nil then
 		return -1;
 	end
-	
+
 	return Token.getDistanceBetween(srcToken, tgtToken);
-	
 end
 
+-- Get the range penalty based on the distance to target and weapon used
 function getRangeModifier(srcNode, rRoll, nRange)
-	-- Get the range penalty based on the distance to target and weapon used
-	
 	-- Get the name of the weapon being used
 	local sWeaponUsed = string.match(rRoll.sDesc, "%]([^%[]*)");
 	sWeaponUsed = StringManager.trim(sWeaponUsed):lower();
@@ -145,7 +141,7 @@ function getRangeModifier(srcNode, rRoll, nRange)
 			nMaxInc = tWeaponRangeData[2];
 		end
 	end
-	
+
 	if nMaxInc == 0 or nRangeInc == 0 then
 		-- Weapon wasn't found.  Maybe it is a spell or special ability?
 		if hasSpell(srcNode, sWeaponUsed) then
@@ -158,9 +154,9 @@ function getRangeModifier(srcNode, rRoll, nRange)
 		Comm.deliverChatMessage(tMsg);
 		return 0;
 	end
-	
+
 	local nInc = math.ceil(nRange / nRangeInc);
-	
+
 	-- Issue warning if beyond maximum range
 	if nInc > nMaxInc then
 		local tMsg = {sender = "", font = "emotefont", mood = "ooc"};
@@ -168,16 +164,14 @@ function getRangeModifier(srcNode, rRoll, nRange)
 		tMsg.text = "Range " .. nRange .. " is beyond the " .. sWeaponUsed .. "'s maximum of " .. nMaxRange;
 		Comm.deliverChatMessage(tMsg);
 	end
-	
+
 	local nRngMod = -2;
 	if hasFeat(srcNode, "Far Shot") then
 		nRngMod = -1;
 	end
 	return (nInc - 1) * nRngMod;
-	
 end
 
-function checkShootMelee(rSource, srcNode, rTarget)
 	-- Returns the modifier for shooting into melee:
 	-- If the target is engaged with a friendly actor
 	--   ("if they are enemies of each other and either threatens the other")
@@ -189,23 +183,23 @@ function checkShootMelee(rSource, srcNode, rTarget)
 	-- ("An unconscious or otherwise immobilized character is not considered engaged
 	--   unless he is actually being attacked.)"
 	-- Does not handle the situation of two or more size <-1 creatures fighting in the same space
-	
+function checkShootMelee(rSource, srcNode, rTarget)
 	-- check for Precise Shot feat
 	if hasFeat(srcNode, "Precise Shot") then
 		return 0;
 	end
-	
+
 	-- check for "Precise Shot" effect (in case something else ignores this penalty)
 	if EffectManager35E.hasEffectCondition(rSource, "Precise Shot") then
 		return 0;
 	end
-	
+
 	-- are we on a gridded map?
 	local srcToken, tgtToken, srcImage, tgtImage = getTokensMaps(rSource, rTarget);
 	if srcToken == nil then
 		return 0;
 	end
-	
+
 	-- shotX, shotY:  x,y of the targetted grid square, i.e. the closest grid containing the target
 	local tgtSpace = DB.getValue(ActorManager.getCTNode(rTarget), "space");
 	local tgtSize = ActorManager35E.getSize(rTarget);
@@ -216,7 +210,7 @@ function checkShootMelee(rSource, srcNode, rTarget)
 		-- figure out which square of the target is closest to source
 		tgtCoord.x, tgtCoord.y = getClosestTargetSquare(rTarget, srcToken, tgtToken, tgtSpace, tgtImage);
 	end
-	
+
 	local adjTokens = srcImage.getTokensWithinDistance({x=tgtCoord.x, y=(tgtCoord.y * -1)}, 5);
 	local srcFaction = DB.getValue(ActorManager.getCTNode(rSource), "friendfoe");
 	local nPenalty = 0
@@ -251,16 +245,14 @@ function checkShootMelee(rSource, srcNode, rTarget)
 			end
 		end
 	end
-	
+
 	return nPenalty;
-	
 end
 
+-- return the X,Y of the center of the closest square of tgtToken from srcToken
 function getClosestTargetSquare(rTarget, srcToken, tgtToken, tgtSpace, tgtImage)
-	-- return the X,Y of the center of the closest square of tgtToken from srcToken
-	
 	local tgtEdges = getTokenEdgeSquares(rTarget, tgtToken, tgtImage)
-	
+
 	-- Which target edge square is closest to srcToken?
 	-- Two squares are often equally close, since ranges are in grid increments (4 straight up is 20',
 	-- 3 up 1 diagonal is also 20')
@@ -284,15 +276,13 @@ function getClosestTargetSquare(rTarget, srcToken, tgtToken, tgtSpace, tgtImage)
 			yClose = c.y;
 		end
 	end
-	
+
 	return xClose, yClose;
-	
 end
 
+-- Return true if the rSource is flanking the rTarget
+-- Does not account for the use of weapons with Reach
 function checkFlanked(rSource, srcNode, rTarget)
-	-- Return true if the rSource is flanking the rTarget
-	-- Does not account for the use of weapons with Reach
-	
 	-- When making a melee attack, you get a +2 flanking bonus if your opponent is threatened by another enemy character or creature on its opposite border or opposite corner.
 	-- When in doubt about whether two characters flank an opponent in the middle, trace an imaginary line between the two attackers’ centers. If the line passes through opposite borders of the opponent’s space (including corners of those borders), then the opponent is flanked.
 	-- Exception: If a flanker takes up more than 1 square, it gets the flanking bonus if any square it occupies counts for flanking.
@@ -300,34 +290,34 @@ function checkFlanked(rSource, srcNode, rTarget)
 	-- Creatures with a reach of 0 feet can’t flank an opponent.
 	
 	local bFlanked = false;
-	
+
 	-- Some creatures can't be flanked; some can be flanked (for purposes of Sneak Attack) but
 	-- ignore the +2 bonus
 	local bIgnoreFlank, bIgnoreBonus = checkCanBeFlanked(rSource, rTarget);
 	if bIgnoreFlank then
 		return false;
 	end
-	
+
 	-- are we on a gridded map?
 	local srcToken, tgtToken, srcImage, tgtImage = getTokensMaps(rSource, rTarget);
 	if srcToken == nil then
 		return false;
 	end
-	
+
 	-- Get all tokens threatening rTarget in the same faction as rSource
 	local tThreats = getMeleeThreats(srcToken, tgtToken, DB.getValue(ActorManager.getCTNode(rSource), "friendfoe"));
-	
+
 	-- Get the upper/lower Y and left/right X values of rTarget's edges
 	local tTgtBnd = getTokenBounds(rTarget, tgtToken, tgtImage);
-	
+
 	-- Get the coordinate of target's center
 	-- local tgtX, tgtY = tgtToken.getPosition();
 	local tgtX = (tTgtBnd.left + tTgtBnd.right) / 2;
 	local tgtY = (tTgtBnd.top + tTgtBnd.bottom) / 2;
-	
+
 	-- Get the squares around the edge of rSource
 	local tSrcEdge = getTokenEdgeSquares(rSource, srcToken, srcImage);
-	
+
 	for _, tknThreat in pairs(tThreats) do
 		-- Get edge squares of tknThreat
 		local tThrEdge = getTokenEdgeSquares(CombatManager.getCTFromToken(tknThreat), tknThreat, srcImage);
@@ -382,20 +372,18 @@ function checkFlanked(rSource, srcNode, rTarget)
 			end
 		end
 	end
-	
+
 	return bFlanked;
-	
 end
 
+-- Check for various conditions which prevent rTarget from being flanked.
+-- Return two booleans:
+--		true if rTarget igrnores flanking completely
+--		true if rTarget can be flanked (for sneak attack) but ignores the +2 bonus (e.g. Formians)
 function checkCanBeFlanked(rSource, rTarget)
-	-- Check for various conditions which prevent rTarget from being flanked.
-	-- Return two booleans:
-	--		true if rTarget igrnores flanking completely
-	--		true if rTarget can be flanked (for sneak attack) but ignores the +2 bonus (e.g. Formians)
-	
 	local bIgnoreFlank, bIgnoreBonus = false, true;
 	local bTgtPC = ActorManager.isPC(rTarget)
-	
+
 	-- subtype "swarm"
 	if bTgtPC == false then
 		local vTgtNode = ActorManager.getCreatureNode(rTarget);
@@ -405,7 +393,7 @@ function checkCanBeFlanked(rSource, rTarget)
 			return true, false;
 		end
 	end
-	
+
 	-- "all-around vision" in "Senses" (Pathfinder Bestiary 2 Universal Monster Rules)
 	
 	-- "Immune ... flanking" in "SQ"
@@ -427,18 +415,16 @@ function checkCanBeFlanked(rSource, rTarget)
 	-- feat "Eyes in the Back of Your Head"  can be flanked, but no +2 to hit
 	
 	return bIgnoreFlank, bIgnoreBonus;
-	
 end
 
+-- Get all tokens threatening tgtToken
+--     "colossal" reach is 30', so get all tokens within that distance
+--     check for faction (must be same as source)
 function getMeleeThreats(srcToken, tgtToken, sSourceFaction)
-	-- Get all tokens threatening tgtToken
-	--     "colossal" reach is 30', so get all tokens within that distance
-	--     check for faction (must be same as source)
-	
 	local tThreats = {};
-	
+
 	local tNearTokens = Token.getTokensWithinDistance(tgtToken, 30);
-	
+
 	for _,checkToken in pairs(tNearTokens) do
 		local rNearActorCT = CombatManager.getCTFromToken(checkToken);
 		-- Debug.chat("rNearActorCT:  ", rNearActorCT, DB.getValue(ActorManager.getCTNode(rNearActorCT), "name"));
@@ -463,13 +449,11 @@ function getMeleeThreats(srcToken, tgtToken, sSourceFaction)
 			end
 		end
 	end
-	
+
 	return tThreats;
-	
 end
 
 -- function testTokenEdgeSquares(rSource, rTarget)
-	
 	-- local srcToken, tgtToken, srcImage, tgtImage = getTokensMaps(rSource, rTarget);
 	-- Debug.chat("testTokenEdgeSquares");
 	-- Debug.chat(tgtToken.getPosition());
@@ -479,21 +463,19 @@ end
 		-- Debug.chat(c);
 		-- tgtImage.addToken("tokens/Biohazard_symbol_(black_and_yellow).png", c.x, c.y);
 	-- end
-	
 -- end
 
+-- Returns a table holding the X,Y coordinates of the edge squares of theToken
 function getTokenEdgeSquares(rActor, theToken, tknImage)
-	-- Returns a table holding the X,Y coordinates of the edge squares of theToken
-	
 	local tgtSpace = DB.getValue(ActorManager.getCTNode(rActor), "space");
-	
+
 	if tgtSpace == 5 then
 		local tknX, tknY = theToken.getPosition();
 		return {{x = tknX, y = tknY}};
 	end
-	
+
 	local tknBounds = getTokenBounds(rActor, theToken, tknImage)
-	
+
 	local nGridSize = tknImage.getGridSize();
 	local nGrid = GameSystem.getDistanceUnitsPerGrid(); -- for 3.5E this is 5
 	local nHalfGrid = nGridSize / 2;
@@ -517,38 +499,34 @@ function getTokenEdgeSquares(rActor, theToken, tknImage)
 		-- table.insert(tknEdge, {y = tknBounds.top + (i * nGridSize), x = tknBounds.left + nHalfGrid});
 		-- table.insert(tknEdge, {y = tknBounds.top + (i * nGridSize), x = tknBounds.right - nHalfGrid});
 	end
-	
+
 	return tknEdge;
-	
 end
 
+-- Returns a table holding the the upper and lower Y and left and right X values of theToken
+-- {["top"] = #, ["bottom"] = #, ["left"] = #, ["right"] = #}
 function getTokenBounds(rActor, theToken, tknImage)
-	-- Returns a table holding the the upper and lower Y and left and right X values of theToken
-	-- {["top"] = #, ["bottom"] = #, ["left"] = #, ["right"] = #}
-	
 	local tgtX, tgtY = theToken.getPosition();
 	local tgtSpace = DB.getValue(ActorManager.getCTNode(rActor), "space");
-	
+
 	local nGrid = GameSystem.getDistanceUnitsPerGrid(); -- for 3.5E this is 5
 	local nGridSize = tknImage.getGridSize();  -- usually 50
 	local nHalfGrid = nGridSize / 2;
 	local tgtSide = tgtSpace / nGrid;  -- number of squares per side of the target token
-	
+
 	return {
 		["top"]    = tgtY - (tgtSide / 2) * nGridSize;
 		["bottom"] = tgtY + (tgtSide / 2) * nGridSize;
 		["left"]   = tgtX - (tgtSide / 2) * nGridSize;
 		["right"]  = tgtX + (tgtSide / 2) * nGridSize};
-	
 end
 
+-- Are the tokens for rSource and rTarget both on the same gridded map?
 function getTokensMaps(rSource, rTarget)
-	-- Are the tokens for rSource and rTarget both on the same gridded map?
-	
-	if rTarget == nil or rSource == nil then
+	if not rTarget or not rSource then
 		return nil, nil, nil, nil;
 	end
-	
+
 	local srcToken = CombatManager.getTokenFromCT(rSource.sCTNode);
 	local tgtToken = CombatManager.getTokenFromCT(rTarget.sCTNode);
 	local srcImage = ImageManager.getImageControl(srcToken);
@@ -558,12 +536,9 @@ function getTokensMaps(rSource, rTarget)
 	else
 		return srcToken, tgtToken, srcImage, tgtImage;
 	end
-	
-	
 end
 
 function attackType(rRoll)
-	
 	local sAttackType = nil;
 	if rRoll.sType == "attack" then
 		-- Debug.console("rRoll.sDesc:  ", rRoll.sDesc); 
@@ -576,32 +551,28 @@ function attackType(rRoll)
 	elseif rRoll.sType == "grapple" then
 		sAttackType = "M";
 	end
-	
+
 	return sAttackType;
-	
 end
 
 function hasFeat(actorNode, sFeat)
-	
 	-- Debug.chat("actorNode:  ", actorNode);
 	if actorNode == nil
 	then
 		return false;
 	end
-	
+
 	if ActorManager.isPC(actorNode) then
 		return CharManager.hasFeat(actorNode, sFeat);
 	else
 		return npcHasFeat(actorNode, sFeat);
 	end
-	
 end
 
+-- Returns true if the rActorCT can threaten enemies in melee;
+-- false if they have a status or effect which renders them unable to do so or
+-- they are unable to see the target
 function checkCanThreaten(rActorCT, rTargetCT)
-	-- Returns true if the rActorCT can threaten enemies in melee;
-	-- false if they have a status or effect which renders them unable to do so or
-	-- they are unable to see the target
-	
 	-- Actor conditions
 	if EffectManager35E.hasEffectCondition(rActorCT, "Unconscious") or
 		EffectManager35E.hasEffectCondition(rActorCT, "Incapacitated") or
@@ -611,7 +582,7 @@ function checkCanThreaten(rActorCT, rTargetCT)
 		EffectManager35E.hasEffectCondition(rActorCT, "Helpless") then
 		return false;
 	end
-	
+
 	-- Actor is flat-footed and doesn't have Combat Reflexes
 	if EffectManager35E.hasEffectCondition(rActorCT, "Flatfooted") or
 		EffectManager35E.hasEffectCondition(rActorCT, "Flat-footed") then
@@ -619,7 +590,7 @@ function checkCanThreaten(rActorCT, rTargetCT)
 			return false;
 		end
 	end
-	
+
 	-- Target invisibility
 	-- I feel like something is missing here.  Tremorsense/scent?
 	-- Also, for NPC Truesight/Blindsight/etc. might not be an effect, just a sense
@@ -629,35 +600,30 @@ function checkCanThreaten(rActorCT, rTargetCT)
 			return false;
 		end
 	end
-	
+
 	return true;
-	
 end
 
 function npcHasFeat(ctNode, sFeat)
-	
 	local sLowerFeat = StringManager.trim(string.lower(sFeat));
 	local sFeatList = DB.getValue(ctNode, "feats");
 	local sLowerFeatList = StringManager.trim(string.lower(sFeatList));
 	return string.match(sLowerFeatList, sLowerFeat);
-	
 end
 
 function npcHasSQ(ctNode, sQuality)
-	
 	local sLowerQuality = StringManager.trim(string.lower(sQuality));
 	local sQualityList = DB.getValue(ctNode, "specialqualities");
 	local sLowerQualityList = StringManager.trim(string.lower(sQualityList));
 	return string.match(sLowerQualityList, sLowerQuality);
-	
 end
 
+-- Using this instead of EffectManager.removeEffect() because we want an exact match
 function removeEffect(nodeCTEntry, sEffectToRemove)
-	-- Using this instead of EffectManager.removeEffect() because we want an exact match
 	if not sEffectToRemove then
 		return;
 	end
-	
+
 	for _,nodeEffect in pairs(DB.getChildren(nodeCTEntry, "effects")) do
 		if DB.getValue(nodeEffect, "label", "") == sEffectToRemove then
 			-- nodeEffect.delete();
@@ -665,14 +631,11 @@ function removeEffect(nodeCTEntry, sEffectToRemove)
 			return;
 		end
 	end
-	
 end
 
--- function addEffect(sUser, sIdentity, nodeCT, rNewEffect, bShowMsg)
+-- Check for the effect before adding it.
+-- Just calling EffectManager.addEffect will create a duplicate.
 function addEffect(rSource, rNewEffect)
-	-- Check for the effect before adding it.
-	-- Just calling EffectManager.addEffect will create a duplicate.
-	
 	-- Debug.chat(ActorManager.getCTNode(rSource));
 	-- Debug.chat(rSource.sCTNode);
 	local nodeCT = ActorManager.getCTNode(rSource);
@@ -681,13 +644,11 @@ function addEffect(rSource, rNewEffect)
 		-- EffectManager.addEffect(sUser, sIdentity, nodeCT, rNewEffect, bShowMsg);
 		EffectManager.notifyApply(rNewEffect, rSource.sCTNode);
 	end
-	
 end
 
+-- Using this instead of EffectManager35E.hasEffectCondition() because we want an exact match
+-- local nodeCT = ActorManager.getCTNode(rSource);
 function hasEffect(nodeCT, sEffect)
-	-- Using this instead of EffectManager35E.hasEffectCondition() because we want an exact match
-	-- local nodeCT = ActorManager.getCTNode(rSource);
-	
 	local nodeEffectsList = nodeCT.createChild("effects");
 	if nodeEffectsList then
 		for _,nodeEffect in pairs(nodeEffectsList.getChildren()) do
@@ -697,14 +658,13 @@ function hasEffect(nodeCT, sEffect)
 			end
 		end
 	end
+
 	return false;
-	
 end
 
+-- returns true if the PC charsheet or NPC CTnode has the spell named sSpell;
+-- returns false if it is not found
 function hasSpell(actorNode, sSpell)
-	-- returns true if the PC charsheet or NPC CTnode has the spell named sSpell;
-	-- returns false if it is not found
-	
 	for _,vSSN in pairs(DB.getChildren(actorNode, "spellset")) do
 		for _,vLevel in pairs(DB.getChildren(vSSN, "levels")) do
 			for _,vSpell in pairs(DB.getChildren(vLevel, "spells")) do
@@ -715,9 +675,8 @@ function hasSpell(actorNode, sSpell)
 			end
 		end
 	end
-	
+
 	return false;
-	
 end
 
 function onInit()
